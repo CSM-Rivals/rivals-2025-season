@@ -1,0 +1,14 @@
+# Dataset root directory relative to the yolov5 directory
+path: dataset.yaml
+
+# Train/val/test sets: specify directories, *.txt files, or lists
+train: Images # 4 images for training
+val: Images # 4 images for validation
+test: # Optional path to test images
+
+# Classes 
+names:
+    0: pencil
+    1: pencil
+    2: pencil
+    3: pencil
