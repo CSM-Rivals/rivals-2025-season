@@ -1,9 +1,11 @@
 #export COMET_API_KEY = "mGii0CE9f1rdjIvx2WdtWdT5z"
 
-from ultralytics import YOLO
 import comet_ml
 from comet_ml import start
 from comet_ml.integration.pytorch import log_model
+import os
+from ultralytics import YOLO
+
 
 
 #Login to Comet
@@ -20,9 +22,16 @@ experiment = start(
 hyper_params = {
    "learning_rate": 0.5,
    "steps": 100000,
-   "batch_size": 50,
+   "batch_size": 20,
 }
 experiment.log_parameters(hyper_params)
+
+#set the maximum amount of image predictions Comet can make on a dataset
+#os.environ["COMET_MAX_IMAGE_PREDICTIONS"] = "200"
+#log an image prediction every nth batch.
+os.environ["COMET_EVAL_BATCH_LOGGING_INTERVAL"] = "1" #n value
+#Store log data in a directory while offline that can be uploaded later when connected to the internet
+#os.environ["COMET_MODE"] = "offline"
 
 
 # Create a new YOLO model from scratch
@@ -31,8 +40,8 @@ model = YOLO("yolo11n.yaml")
 # Load a pretrained YOLO model (recommended for training)
 #model = YOLO("yolo11n.pt")
 
-# Train the model using the 'dataset.yaml' dataset for 3 epochs
-results = model.train(data="coco8.yaml", epochs=3) # for model from scratch
+# Train the model using the 'dataset.yaml' dataset for n epochs
+results = model.train(data="coco8.yaml", epochs=5) # for model from scratch
 #results = model.train(epochs=5) for pretrained
 
 # Evaluate the model's performance on the validation set
@@ -51,7 +60,7 @@ prediction = model.predict(
     conf=0.5, #minimum conference theshold to detect objects
     iou=0.7, #IOU for NMS
     device='0', #cpu/gpu device ID (ex: '0', or "0, 1" for two or more devices). '0' for default CPU.
-    batch=1, #batch size
+    batch=20, #batch size
     stream_buffer=False, #when true, frames are queued for processing, non skipped. When false,
     #frames are skipped if the queue is full.
     visualize=True, #visualize model's interpertation for debugging
@@ -107,3 +116,5 @@ experiment.log_image() #Display images in Comet, also try log_video() or log_fig
 
 # Export the model to ONNX format
 success = model.export(format="onnx")
+
+print(f"Here is the link to your experiment data: {experiment.url}")
