@@ -1,13 +1,38 @@
+#export COMET_API_KEY = "mGii0CE9f1rdjIvx2WdtWdT5z"
+
 from ultralytics import YOLO
+import comet_ml
+from comet_ml import start
+from comet_ml.integration.pytorch import log_model
+
+
+#Login to Comet
+comet_ml.login(api_key="mGii0CE9f1rdjIvx2WdtWdT5z", project_name="comet-test")
+
+#Run the project
+experiment = start(
+  api_key="mGii0CE9f1rdjIvx2WdtWdT5z",
+  project_name="comet-test",
+  workspace="carbon"
+)
+
+# Report multiple hyperparameters using a dictionary:
+hyper_params = {
+   "learning_rate": 0.5,
+   "steps": 100000,
+   "batch_size": 50,
+}
+experiment.log_parameters(hyper_params)
+
 
 # Create a new YOLO model from scratch
 model = YOLO("yolo11n.yaml")
 
 # Load a pretrained YOLO model (recommended for training)
-model = YOLO("yolo11n.pt")
+#model = YOLO("yolo11n.pt")
 
 # Train the model using the 'dataset.yaml' dataset for 3 epochs
-results = model.train(data="dataset.yaml", epochs=3) # for model from scratch
+results = model.train(data="coco8.yaml", epochs=3) # for model from scratch
 #results = model.train(epochs=5) for pretrained
 
 # Evaluate the model's performance on the validation set
@@ -71,6 +96,14 @@ for i, r in enumerate(results):
     r.save(filename=f"image{i}.jpg")
     
 #Look into thread safe interference if multiple models are used at once
+#Remember to view Ultralytics settings file
+#Get confusion matrix as json?
+
+# Seamlessly log your Pytorch model
+log_model(experiment, model=model, model_name="Test Model")
+experiment.set_model_graph() #Display a graph in Comet
+experiment.log_histogram_3d() #Display a histogram in Comet
+experiment.log_image() #Display images in Comet, also try log_video() or log_figure()
 
 # Export the model to ONNX format
 success = model.export(format="onnx")
