@@ -34,14 +34,15 @@ os.environ["COMET_EVAL_BATCH_LOGGING_INTERVAL"] = "1" #n value
 #os.environ["COMET_MODE"] = "offline"
 
 
+
 # Create a new YOLO model from scratch
-model = YOLO("yolo11n.yaml")
+#model = YOLO("yolo11n.yaml")
 
 # Load a pretrained YOLO model (recommended for training)
-#model = YOLO("yolo11n.pt")
+model = YOLO('custom_yoloworld_model.pt')
 
 # Train the model using the 'dataset.yaml' dataset for n epochs
-results = model.train(data="coco8.yaml", epochs=5) # for model from scratch
+results = model.train(data="dataset.yaml", epochs=5) # for model from scratch
 #results = model.train(epochs=5) for pretrained
 
 # Evaluate the model's performance on the validation set
