@@ -10,6 +10,7 @@ pub trait OpenLoopMotor {
 
 pub struct PWMMotor {
     pin: OutputPin,
+    reverse_pin: Option<OutputPin>,
     period: Duration,
     min_pulse_width: Duration,
     max_pulse_width: Duration,
@@ -20,10 +21,12 @@ pub struct PWMMotor {
 impl PWMMotor {
     pub fn new(
         pin: OutputPin,
+        reverse_pin: Option<OutputPin>,
         max_velocity: AngularVelocity,
     ) -> PWMMotor {
         let mut motor = PWMMotor {
             pin: pin,
+            reverse_pin: reverse_pin,
             period: Duration::from_millis(20),
             min_pulse_width: Duration::from_millis(1),
             max_pulse_width: Duration::from_millis(2),
@@ -32,7 +35,7 @@ impl PWMMotor {
             power: 0.
         };
 
-        motor.set_power(0.);
+        motor.set_power(0.0);
 
         motor
     }
@@ -53,10 +56,26 @@ impl PWMMotor {
 
 impl OpenLoopMotor for PWMMotor {
     fn set_power(&mut self, power: f64) {
-        let _ = self.pin.set_pwm(
-            self.period,
-            (self.max_pulse_width - self.min_pulse_width).mul_f64(power.abs()) + self.min_pulse_width,
-        );
+        match &mut self.reverse_pin {
+            Some(reverse_pin) => {
+                let _ = self.pin.set_pwm(
+                    self.period,
+                    (self.max_pulse_width - self.min_pulse_width).mul_f64(power.abs()) + self.min_pulse_width,
+                );
+
+                if power < 0.0 {
+                    let _ = reverse_pin.set_high();
+                } else {
+                    let _ = reverse_pin.set_low();
+                }
+            },
+            None => {
+                let _ = self.pin.set_pwm(
+                    self.period,
+                    (self.max_pulse_width - self.min_pulse_width).mul_f64((power + 1.0) / 2.0) + self.min_pulse_width,
+                );
+            },
+        }
 
         self.power = power;
     }

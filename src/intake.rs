@@ -10,7 +10,7 @@ pub struct Intake {
 impl Intake {
     pub fn new(gpio: Gpio, pin: u8) -> Intake {
         Intake {
-            motor: PWMMotor::new(gpio.get(pin).unwrap().into_output(), AngularVelocity::new::<revolution_per_minute>(1000.0)),
+            motor: PWMMotor::new(gpio.get(pin).unwrap().into_output(), None, AngularVelocity::new::<revolution_per_minute>(1000.0)),
         }
     }
 

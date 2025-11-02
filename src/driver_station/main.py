@@ -14,12 +14,21 @@ class Socket:
     def __init__(self, host, addr):
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.connect((host, addr))
+        self.host = host
+        self.addr = addr
 
     def write(self, data):
         try:
             return self._sock.send(data)
         except ConnectionAbortedError:
             print('Disconnected!')
+            try:
+                print('Reconnecting')
+                self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self._sock.connect((self.host, self.addr))
+                print('Reconnected')
+            except:
+                pass
 
     def connect(self):
         pass
@@ -44,17 +53,17 @@ while loop:
 
     keys = pygame.key.get_pressed()
     if keys[pygame.K_w]:
-        input_y += 1
+        input_y += 0.25
     if keys[pygame.K_a]:
-        input_x -= 1
+        input_x -= 0.25
     if keys[pygame.K_s]:
-        input_y -= 1
+        input_y -= 0.25
     if keys[pygame.K_d]:
-        input_x += 1
+        input_x += 0.25
     if keys[pygame.K_e]:
-        input_r += 1
+        input_r += 0.25
     if keys[pygame.K_q]:
-        input_r -= 1
+        input_r -= 0.25
     
     if keys[pygame.K_u]:
         button_x = True

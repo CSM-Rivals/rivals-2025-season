@@ -8,10 +8,10 @@ pub struct Shooter {
 }
 
 impl Shooter {
-    pub fn new(gpio: Gpio, pin: u8) -> Shooter {
+    pub fn new(gpio: &Gpio, pin: u8) -> Shooter {
         println!("Shooter startup");
         Shooter {
-            motor: PWMMotor::new(gpio.get(pin).unwrap().into_output(), AngularVelocity::new::<revolution_per_minute>(1000.0)),
+            motor: PWMMotor::new(gpio.get(pin).unwrap().into_output(), None, AngularVelocity::new::<revolution_per_minute>(1000.0)),
         }
     }
 

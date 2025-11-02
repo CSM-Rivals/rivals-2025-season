@@ -34,6 +34,7 @@ impl Packet {
 impl Input {
     pub fn new() -> Input {
         let listener = TcpListener::bind("0.0.0.0:29230").unwrap();
+        let _ = listener.set_nonblocking(true);
         Input {
             listener,
 
@@ -60,20 +61,27 @@ impl Input {
 
     pub fn update(&mut self) {
         {
-            let last_packet = self.last_packet.lock().unwrap();
-
-            self.state = last_packet.clone();
+            let last_packet = self.last_packet.try_lock();
+            match last_packet {
+                Ok(last_packet) => {
+                    self.state = last_packet.clone();
+                },
+                Err(_) => {},
+            }
         }
 
         for stream in self.listener.incoming() {
             match stream {
                 Ok(stream) => {
+                    println!("client connected");
                     let arc = self.last_packet.clone();
                     thread::spawn(move || {
                         Input::handle_connection(stream, arc);
                     });
                 },
-                Err(_) => {},
+                Err(_) => {
+                    break;
+                },
             }
         }
     }
