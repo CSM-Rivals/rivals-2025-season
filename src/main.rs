@@ -16,8 +16,8 @@ fn main() {
     let gpio = Gpio::new().unwrap();
 
     let mut drivetrain_motors: Motors = Motors::new(&gpio, 5, 6, 13, 19);
-    // let mut shooter = Shooter::new(&gpio, 24);
-    // let mut intake = Intake::new(gpio, 23);
+    let mut shooter = Shooter::new(&gpio, 24, 27);
+    let mut intake = Intake::new(&gpio, 23, 22);
 
     let mut input = Input::new();
 
@@ -38,10 +38,11 @@ fn main() {
 
         // println!("asdf");
         // println!("x: {}", input.state.x);
-        drivetrain::apply_inputs(&mut drivetrain_motors, input.state.left_stick_x, input.state.left_stick_y);
+        drivetrain::apply_inputs(&mut drivetrain_motors, input.state.left_stick_x * -1.0, input.state.left_stick_y, input.state.right_stick_x * -0.5);
 
         // shooter.update(true);
-        // shooter.update(input.state.x);
+        shooter.update(input.state.y);
+        intake.update(input.state.x);
 
         std::thread::sleep(Duration::from_millis(10));
     }

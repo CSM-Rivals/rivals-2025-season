@@ -8,15 +8,15 @@ pub struct Intake {
 }
 
 impl Intake {
-    pub fn new(gpio: Gpio, pin: u8) -> Intake {
+    pub fn new(gpio: &Gpio, pin: u8, reverse_pin: u8) -> Intake {
         Intake {
-            motor: PWMMotor::new(gpio.get(pin).unwrap().into_output(), None, AngularVelocity::new::<revolution_per_minute>(1000.0)),
+            motor: PWMMotor::new(gpio.get(pin).unwrap().into_output(), Some(gpio.get(reverse_pin).unwrap().into_output()), AngularVelocity::new::<revolution_per_minute>(1000.0)),
         }
     }
 
     pub fn update(&mut self, run: bool) {
         if run {
-            self.motor.set_power(0.25);
+            self.motor.set_power(0.5);
         } else {
             self.motor.set_power(0.0);
         }

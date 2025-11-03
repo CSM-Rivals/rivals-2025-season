@@ -45,13 +45,13 @@ impl Motors {
     }
 }
 
-pub fn apply_inputs(motors: &mut Motors, x: f64, y: f64) {
+pub fn apply_inputs(motors: &mut Motors, x: f64, y: f64, r: f64) {
     // motors.bl.set_power(y);
     // motors.br.set_power(y);
     // motors.fl.set_power(y);
     // motors.fr.set_power(y);
-    motors.bl.set_power(x * SQRT2_2 + y * SQRT2_2);
-    motors.br.set_power(-x * SQRT2_2 + y * SQRT2_2);
-    motors.fl.set_power(x * SQRT2_2 + y * SQRT2_2);
-    motors.fr.set_power(-x * SQRT2_2 + y * SQRT2_2);
+    motors.bl.set_power(x * SQRT2_2 + y * SQRT2_2 - r);
+    motors.br.set_power(-x * SQRT2_2 + y * SQRT2_2 + r);
+    motors.fl.set_power(x * SQRT2_2 + y * SQRT2_2 + r);
+    motors.fr.set_power(-x * SQRT2_2 + y * SQRT2_2 - r);
 }

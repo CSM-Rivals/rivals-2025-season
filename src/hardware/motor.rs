@@ -72,7 +72,7 @@ impl OpenLoopMotor for PWMMotor {
             None => {
                 let _ = self.pin.set_pwm(
                     self.period,
-                    (self.max_pulse_width - self.min_pulse_width).mul_f64((power + 1.0) / 2.0) + self.min_pulse_width,
+                    Duration::from_secs_f64((self.max_pulse_width.as_secs_f64() - self.min_pulse_width.as_secs_f64()) * ((power + 1.0) / 2.0) + self.min_pulse_width.as_secs_f64()),
                 );
             },
         }
