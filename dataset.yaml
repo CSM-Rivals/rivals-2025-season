@@ -2,8 +2,8 @@
 path: dataset.yaml
 
 # Train/val/test sets: specify directories, *.txt files, or lists
-train: C:\Users\nicho\Documents\Robotics\rivals-2025-season\datasets\dataset\images\train # 4 images for training
-val: C:\Users\nicho\Documents\Robotics\rivals-2025-season\datasets\dataset\images\val # 4 images for validation
+train: C:\Users\nicho\Documents\Robotics\rivals-2025-season\datasets\dataset\images\train #images for training
+val: C:\Users\nicho\Documents\Robotics\rivals-2025-season\datasets\dataset\images\val #images for validation
 test: # Optional path to test images
 
 # Classes 

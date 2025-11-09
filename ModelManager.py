@@ -67,10 +67,10 @@ class ModelManager(Thread):
     self.model = YOLOWorld(self.model_path)
 
     # # Train the model using the 'dataset.yaml' dataset for n epochs
-    # results = self.model.train(data="dataset.yaml", epochs=5, save_dir=None) # for model from scratch
-    '''save_dir determines directory save location'''
+    # results = self.model.train(data="dataset.yaml", epochs=5, save=False, save_dir=None) # for model from scratch
+    '''save_dir determines directory save location, save determines if it is saved at all'''
     # # Evaluate the model's performance on the validation set
-    # results = self.model.val(save_dir=None)
+    # results = self.model.val(save=False, save_dir=None)
 
 
     while self.running:
@@ -78,15 +78,15 @@ class ModelManager(Thread):
         # Block and wait for a frame (with a timeout)
         frame = self.frame_queue.get(timeout=1) 
 
-        results = self.model.predict(
+        results_generator = self.model.predict(
           source=frame, #video frame
-          conf=0.5, #minimum conference theshold to detect objects
+          conf=0.4, #minimum conference theshold to detect objects
           iou=0.7, #IOU for NMS
           #device=0, #cpu/gpu device ID (ex: '0', or "0, 1" for two or more devices). '0' for default CPU.
           batch=20, #batch size
           stream_buffer=False, #when true, frames are queued for processing, non skipped. When false,
           #frames are skipped if the queue is full.
-          visualize=True, #visualize model's interpertation for debugging
+          visualize=False, #visualize model's interpertation with .npy and .jpg files for debugging
           agnostic_nms=True, #class-agnostic NMS to help differntiate overlapping boxes betweeb seperate classes.
           classes=[0, 1, 2, 3], #filter by class specified in the data file (yaml). -1 for no filterting.
           stream=True, #results returned as generator to save memory for large video files
@@ -97,7 +97,8 @@ class ModelManager(Thread):
           show_conf=True, #show confidence scores
           show_labels=True, #show class lables
           save_txt=False, #save results to *.txt file
-          save_dir=None #save to a specific directory
+          save_dir=None, #save to a specific directory
+          cache='ram' #prevents .npy files from being stored in directory as temporary storage, instead using ram
           )
 
 
@@ -106,6 +107,8 @@ class ModelManager(Thread):
         #results_at_time_t = results.new() #makes a copy of the contents of results when this method is called
         #results_file = results.save() #saves results to a file, stored in the results_file object
         #results.to_json() #converts the results file to a JSON file. Useful to be read by C++ or Rust code.
+
+        results = list(results_generator) #convert the generator object to a list
 
         #Access each frame of the video (each frame is an entry in the results list)
         for i, frame in enumerate(results):
@@ -130,18 +133,6 @@ class ModelManager(Thread):
 
             bgr_image = frame.plot() #numpy array ordered by bgr, look at plot() for more arguments
             # frame.save(filename=f"image{i}.jpg")
-            
-        #Look into thread safe interference if multiple models are used at once
-        #Remember to view Ultralytics settings file
-        #Get confusion matrix as json?
-
-        # log Pytorch model in Comet with graphs
-        experiment.set_model_graph(str(self.model)) #Display a graph in Comet
-
-        # Export the model to ONNX format
-        #success = model.export(format="onnx")
-
-        print(f"Here is the link to your experiment data: {experiment.url}")
 
 
         # Put the result (frame + detections) into the output queue
@@ -152,6 +143,12 @@ class ModelManager(Thread):
 
       except Exception as e:
         print(e)
+
+
+    #log Pytorch model in Comet with graphs
+    experiment.set_model_graph(str(self.model), overwrite=True) #Display a graph in Comet
+
+    print(f"Here is the link to your experiment data: {experiment.url}")
 
 
   def stop(self):

@@ -32,7 +32,7 @@ class ThreadHandler:
 
         try:
             while True:
-                #get newest frame from the queue (non-blocking)
+                #get newest frame from the queue
                 if not self.results_queue.empty():
                     processed_frame, results = self.results_queue.get()
                     
@@ -43,9 +43,9 @@ class ThreadHandler:
                     #signal that the result has been consumed
                     self.results_queue.task_done() 
 
-                #RUN OTHER CODE HERE!!!
+                #RUN OTHER ROBOT CODE HERE!!!
 
-                # Break loop on 'q' press
+                #break loop on 'q' press (might be ctr + c)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
 
@@ -60,7 +60,7 @@ class ThreadHandler:
         self.camera_thread.stop()
         self.prediction_thread.stop()
         
-        # Wait for threads to finish their current work
+        #Wait for threads to finish before continuing
         self.camera_thread.join()
         self.prediction_thread.join()
         
