@@ -67,7 +67,7 @@ class ModelManager(Thread):
     self.model = YOLOWorld(self.model_path)
 
     # # Train the model using the 'dataset.yaml' dataset for n epochs
-    # results = self.model.train(data="dataset.yaml", epochs=5, save=False, save_dir=None) # for model from scratch
+    # results = self.model.train(data="birdies.yaml", epochs=5, save=False, save_dir=None) # for model from scratch
     '''save_dir determines directory save location, save determines if it is saved at all'''
     # # Evaluate the model's performance on the validation set
     # results = self.model.val(save=False, save_dir=None)
@@ -117,21 +117,35 @@ class ModelManager(Thread):
             experiment.log_image(annotated_frame, name="annotated_camera_frame")
 
             bb = frame.boxes
+            for box in bb:
+              #Get cords
+              x1, y1, x2, y2 = box.xyxy[0].tolist()
+              #Define Center
+              center_x = (x1 + x2) / 2
+              center_y = (y1 + y2) / 2
+              image_width = frame.orig_shape[1] # Original image width
+
+              #determine the percision of turning, for more percision, use fractions closer to 1/2
+              if center_x < image_width / 3: #x center is on the left 1/3 of the screen
+                print("Turn left")
+              elif center_x > (2 * image_width) / 3: #x center is on the right 1/3 of the screen
+                print("Turn right")
+              else: #x center in the middle 1/3 of the screen
+                print("Face forward") #run forward until a little after we have the birdy (camera cant see it)
+                #then face the opposite side of the field (do this where other logic is handled) and launch
+
             bb_conf = bb.conf #confidence of boxes
-            bb_array = bb.numpy() #bounding boxes as a numpy array
-            object_class = bb.cls #class of boxes
-            coordinates = bb.xywh #top left coordinate of box with width and height
             print(bb)
 
             #Keypoints are the most important part of an object, represented by an xy coordinate.
-            #These need to be defined, but are useful for picking up the birdies from the coorect angle.
+            #These need to be defined, but are useful for picking up the birdies from the correct angle.
             #kp = r.keypoints
             #kp_array = kp.numpy()
             #coordinates = kp.xy #xy coordinates of keypoints
             #kp_conf = kp.conf
             #print(kp)
 
-            bgr_image = frame.plot() #numpy array ordered by bgr, look at plot() for more arguments
+            # bgr_image = frame.plot() #numpy array ordered by bgr, look at plot() for more arguments
             # frame.save(filename=f"image{i}.jpg")
 
 
