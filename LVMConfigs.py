@@ -1,0 +1,57 @@
+#Be sure to update each .yaml file when using train or val functionality
+
+class LoggingConfigs:
+
+    api_key = "mGii0CE9f1rdjIvx2WdtWdT5z"
+    project_name = "comet-test"
+    user = "carbon"
+
+class ModelConfigs:
+
+    target_descriptions = ['person'] #a list of descriptions of each object to be detected by the model, including
+    #labeling, training, validating, and predicting. The description is a text prompt, so descriptive words help
+    #be more specifc, ex: 'small red car'
+    learning_rate = 0.5
+    steps = 10000
+    batch_size = 20
+    min_conf = 0.4 #minimum conference theshold to detect objects
+    epochs = 5
+    image_width = 2556 #width in pixels of image to be labeled, check camera dimensions
+    image_height = 1440 #height in pixels of image to be labeled, check camera dimensions
+
+class InferenceConfigs:
+
+    iou = 0.7 #IOU for NMS
+    device = 0 #cpu/gpu device ID (ex: '0', or "0, 1" for two or more devices). '0' for default CPU.
+    stream_buffer = False #when true, frames are queued for processing, non skipped. When false,
+    #frames are skipped if the queue is full.
+    visualize = False #visualize model's interpertation with .npy and .jpg files for debugging
+    agnostic_nms  =True #class-agnostic NMS to help differntiate overlapping boxes betweeb seperate classes.
+    classes = [0, 1, 2, 3] #filter by class specified in the data file (yaml) with an array (ex: [0, 1, 2, 3]).
+    #-1 for no filterting. This array uses the classes of indicies specified in the array.
+    return_as_generator = True #results returned as generator to save memory for large video files
+    console_print = True #print results to console
+    save = False #save results to project directory (runs/detect/exp by default).
+    project_name = "prediction" #save results to project/name
+    show_boxes = True #show bounding boxes
+    show_conf = True #show confidence scores
+    show_labels = True #show class lables
+    save_txt = False #save results to *.txt file
+    save_dir = None #save to a specific directory
+    cache = 'ram' #prevents .npy files from being stored in directory as temporary storage, instead using ram
+
+class CameraConfigs:
+
+    id = 0 #0 is default device camera, usually webcam on laptops
+
+class PathConfigs:
+
+    custom_model_path = 'custom_yoloworld_model.pt' #path to the custom model created via trainig and labels
+    label_making_model_path = 'yolov8s-worldv2.pt' #path to the pre-existing model used by ImageLabeler to label
+    #train and val images
+    unlabeled_images_dir = r"C:/Users/nicho/Documents/Robotics/rivals-2025-season/datasets/pencils/images/train"
+    #the location of images to be labeled in ImageLabeler
+    labeled_images_dir = r"C:/Users/nicho/Documents/Robotics/rivals-2025-season/datasets/birdies/labels/train"
+    #the location to save the newly labeled images in ImageLabeler
+    main_dir = r"C:/Users/nicho/Documents/Robotics/rivals-2025-season" #the main directory of this repo
+    dataset_path = 'birdies.yaml' #patht to the dataset file to be used for train and val

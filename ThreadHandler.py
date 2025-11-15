@@ -3,6 +3,8 @@ import cv2
 from CameraReader import CameraReader
 from ModelManager import ModelManager
 from threading import Thread
+from LVMConfigs import CameraConfigs as CC
+from LVMConfigs import PathConfigs as PC
 
 class ThreadHandler:
     def __init__(self):
@@ -12,11 +14,11 @@ class ThreadHandler:
         
         #start multithreading
         self.camera_thread = CameraReader(
-            0, #0 is camera id
+            CC.id, #0 is default camera id
             self.frame_queue
             )
         self.prediction_thread = ModelManager(
-            'custom_yoloworld_model.pt', 
+            PC.custom_model_path, 
             self.frame_queue, 
             self.results_queue
             )
