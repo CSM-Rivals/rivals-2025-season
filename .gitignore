@@ -41,3 +41,7 @@
 
 # debug information files
 *.dwo
+
+# Added by cargo
+
+/target
