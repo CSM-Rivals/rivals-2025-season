@@ -2,6 +2,8 @@ from queue import Queue
 import cv2
 from CameraReader import CameraReader
 from ModelManager import ModelManager
+from SettingsReader import SettingsReader
+from ImageLabeler import ImageLabeler
 from threading import Thread
 from LVMConfigs import CameraConfigs as CC
 from LVMConfigs import PathConfigs as PC
@@ -11,6 +13,13 @@ class ThreadHandler:
         #queues can only have one item to ensure it is the most recent
         self.frame_queue = Queue(maxsize=1) 
         self.results_queue = Queue(maxsize=1)
+
+        #Assign settings object to Handler to hand down to each class it is used in.
+        self.settings_reader = SettingsReader()
+        self.json_settings = self.settings_reader.load_settings("lvm_settings.json")
+        #Create a labeler object and try to label
+        self.labeler = ImageLabeler(self.json_settings)
+        self.labeler.label()
         
         #start multithreading
         self.camera_thread = CameraReader(
@@ -20,7 +29,8 @@ class ThreadHandler:
         self.prediction_thread = ModelManager(
             PC.custom_model_path, 
             self.frame_queue, 
-            self.results_queue
+            self.results_queue,
+            self.json_settings
             )
         
         #Create daemons (type of thread) to run the seperate threads
@@ -62,7 +72,7 @@ class ThreadHandler:
         self.camera_thread.stop()
         self.prediction_thread.stop()
         
-        #Wait for threads to finish before continuing
+        #wait for threads to finish before continuing
         self.camera_thread.join()
         self.prediction_thread.join()
         

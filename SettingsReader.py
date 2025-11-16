@@ -3,7 +3,7 @@ import os
 
 class SettingsReader:
 
-    def load_settings(filename="lvm_settings.json"):
+    def load_settings(self, filename="lvm_settings.json"):
         
         #build full file path
         config_path = os.path.join(os.getcwd(), filename)

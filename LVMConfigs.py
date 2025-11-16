@@ -49,7 +49,7 @@ class PathConfigs:
     custom_model_path = 'custom_yoloworld_model.pt' #path to the custom model created via trainig and labels
     label_making_model_path = 'yolov8s-worldv2.pt' #path to the pre-existing model used by ImageLabeler to label
     #train and val images
-    unlabeled_images_dir = r"C:/Users/nicho/Documents/Robotics/rivals-2025-season/datasets/pencils/images/train"
+    unlabeled_images_dir = r"C:/Users/nicho/Documents/Robotics/rivals-2025-season/datasets/birdies/images/train"
     #the location of images to be labeled in ImageLabeler
     labeled_images_dir = r"C:/Users/nicho/Documents/Robotics/rivals-2025-season/datasets/birdies/labels/train"
     #the location to save the newly labeled images in ImageLabeler

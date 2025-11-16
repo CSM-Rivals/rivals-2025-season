@@ -10,18 +10,18 @@ from ultralytics.nn.tasks import WorldModel
 import cv2
 from threading import Thread
 from CameraReader import CameraReader
-from SettingsReader import SettingsReader
 from LVMConfigs import LoggingConfigs as LC
 from LVMConfigs import ModelConfigs as MC
 from LVMConfigs import InferenceConfigs as IC
 from LVMConfigs import PathConfigs as PC
 
 class ModelManager(Thread):
-  def __init__(self, model_path, frame_queue, results_queue):
+  def __init__(self, model_path, frame_queue, results_queue, settings):
     super().__init__()
     self.model_path = model_path
     self.frame_queue = frame_queue
     self.results_queue = results_queue
+    self.settings = settings
     self.running = True
     self.model = None #Force the model to exist only in the thread
 
@@ -29,10 +29,11 @@ class ModelManager(Thread):
   #so that the model process dosn't interupt regular robot functionality
   def run(self):
 
-    #load json settings
-    json_settings = SettingsReader.load_settings()
     #if json settings are absent, do not continue any operations
-    if not json_settings:
+    if not self.settings:
+      return
+    #If none of the operations requiring ModelManager are enabled, don't do anything else in this method.
+    elif (self.settings.get('train') == False and self.settings.get('val') == False and self.settings.get('inference') == False):
       return
     
     else:
@@ -80,7 +81,7 @@ class ModelManager(Thread):
       self.model = YOLOWorld(self.model_path)
 
 
-      if json_settings.get("train") == True:
+      if self.settings.get("train") == True:
         # Train the model using the 'dataset.yaml' dataset for n epochs
         train_results = self.model.train(
           model=PC.custom_model_path, 
@@ -91,7 +92,8 @@ class ModelManager(Thread):
           save=IC.save, 
           save_dir=IC.save_dir
           )
-      if json_settings.get("val") == True:
+        
+      if self.settings.get("val") == True:
         # Evaluate the model's performance on the validation set
         val_results = self.model.val(
           data=PC.dataset_path, 
@@ -101,8 +103,7 @@ class ModelManager(Thread):
           save_dir=IC.save_dir
           )
 
-
-      if json_settings.get("inference") == True:
+      if self.settings.get("inference") == True:
         while self.running:
           try:
             #block and wait for a frame (with a timeout)
