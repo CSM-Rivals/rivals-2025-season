@@ -59,7 +59,7 @@ class ModelManager(Thread):
 
       #report multiple hyperparameters using a dictionary:
       hyper_params = {
-        "learning_rate": MC.learning_rate,
+        "learning_rate": MC.initial_learning_rate,
         "steps": MC.steps,
         "batch_size": MC.batch_size,
       }
@@ -77,17 +77,24 @@ class ModelManager(Thread):
       #os.environ["COMET_MODE"] = "offline"
     
 
-      #load pretrained YOLO model (created by labels from ImageLabeler)
+      #load pretrained YOLO model (created by labels from ImageLabeler), used to generate train and val data
       self.model = YOLOWorld(self.model_path)
+      self.model.set_classes(MC.target_descriptions)
+      #load the weights from a previous training, used to predict an input
+      weighted_model = YOLO(PC.best_weights)
+      weighted_model.set_classes(MC.target_descriptions)
 
 
       if self.settings.get("train") == True:
-        # Train the model using the 'dataset.yaml' dataset for n epochs
+        # Train the model using the 'dataset.yaml' dataset
         train_results = self.model.train(
           model=PC.custom_model_path, 
           data=PC.dataset_path,
           batch=MC.batch_size, 
           epochs=MC.epochs, 
+          patience=MC.patience,
+          lr0=MC.initial_learning_rate,
+          lrf=MC.learning_rate_multiplier,
           classes=IC.classes,
           save=IC.save, 
           save_dir=IC.save_dir
@@ -109,9 +116,10 @@ class ModelManager(Thread):
             #block and wait for a frame (with a timeout)
             frame = self.frame_queue.get(timeout=1) 
 
-            results_generator = self.model.predict(
+            results_generator = weighted_model.predict(
               source=frame, #video frame
               conf=MC.min_conf, #minimum conference theshold to detect objects
+              # imgsz=[MC.image_height, MC.image_width],
               iou=IC.iou, #IOU for NMS
               #device=IC.device, #cpu/gpu device ID (ex: '0', or "0, 1" for two or more devices). '0' for default CPU.
               batch=MC.batch_size, #batch size

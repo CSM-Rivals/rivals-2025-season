@@ -2,10 +2,10 @@ task: detect
 mode: train
 model: custom_yoloworld_model.pt
 data: birdies.yaml
-epochs: 8
+epochs: 3
 time: null
 patience: 100
-batch: 32
+batch: 10
 imgsz: 640
 save: false
 save_period: -1
@@ -13,7 +13,7 @@ cache: false
 device: cpu
 workers: 8
 project: null
-name: train2
+name: train4
 exist_ok: false
 pretrained: true
 optimizer: auto
@@ -107,4 +107,4 @@ auto_augment: randaugment
 erasing: 0.4
 cfg: null
 tracker: botsort.yaml
-save_dir: C:\Users\nicho\Documents\Robotics\rivals-2025-season\runs\detect\train2
+save_dir: C:\Users\nicho\Documents\Robotics\rivals-2025-season\runs\detect\train4

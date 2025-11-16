@@ -11,12 +11,16 @@ class ModelConfigs:
     target_descriptions = ['badminton birdy'] #a list of descriptions of each object to be detected by the model, including
     #labeling, training, validating, and predicting. The description is a text prompt, so descriptive words help
     #be more specifc, ex: 'small red car'. This also has a low succses rate for less common objects.
-    learning_rate = 0.5
+    initial_learning_rate = 0.01 #the initial learning rate
+    learning_rate_multiplier = 1 #the learning rate multiplier determines the decay of the learning rate during the
+    #training, ex: starts at an initial of 0.01, decays so that the end learning rate = initial x multiplier
+    #ex: 0.01 x 0.1 = 0.001 final learning rate. A value of 1 keeps the rate constant throughout.
     steps = 10000
-    batch_size = 10
-    min_conf = 0.3 #minimum confidence theshold to detect objects in prediction, val, and train
-    min_label_conf = 0.07 #minimum confidence threshold for the wolrd model to detect objects to label
-    epochs = 3
+    patience = 10 #stop training the model early if there is no improvement for n epochs
+    batch_size = 32
+    min_conf = 0.08 #minimum confidence theshold to detect objects in prediction, val, and train
+    min_label_conf = 0.15 #minimum confidence threshold for the wolrd model to detect objects to label
+    epochs = 50
     image_width = 2556 #width in pixels of image to be labeled, check camera dimensions
     image_height = 1440 #height in pixels of image to be labeled, check camera dimensions
 
@@ -55,3 +59,5 @@ class PathConfigs:
     #the location to save the newly labeled images in ImageLabeler
     main_dir = r"C:/Users/nicho/Documents/Robotics/rivals-2025-season" #the main directory of this repo
     dataset_path = 'birdies.yaml' #patht to the dataset file to be used for train and val
+    best_weights = r"C:/Users/nicho/Documents/Robotics/rivals-2025-season/runs/detect/train2/weights/last.pt"
+    #the current best training weights to use for predictions
