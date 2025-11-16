@@ -1,6 +1,6 @@
 {
-    "inference" : false,
+    "inference" : true,
     "train" : false,
     "val" : false,
-    "label" : true
+    "label" : false
 }

@@ -27,7 +27,7 @@ class ImageLabeler:
          images = os.listdir()
 
          #run inference on imaages
-         world_results = world_model.predict(images, conf=0.5) #this can take a while if several images are input
+         world_results = world_model.predict(images, conf=MC.min_label_conf) #this can take a while if several images are input
 
          os.chdir(PC.labeled_images_dir)
 
@@ -69,7 +69,7 @@ class ImageLabeler:
                except Exception as e:
                   print(f"An errror has occured: {e}")
 
-      os.chdir(PC.main_dir)
-      #save the model for future use
-      world_model.save(PC.custom_model_path)
-      print("Image files labeled and saved to directory.")
+         os.chdir(PC.main_dir)
+         #save the model for future use
+         world_model.save(PC.custom_model_path)
+         print("Image files labeled and saved to directory.")

@@ -87,7 +87,7 @@ class ModelManager(Thread):
           model=PC.custom_model_path, 
           data=PC.dataset_path,
           batch=MC.batch_size, 
-          epcohs=MC.epochs, 
+          epochs=MC.epochs, 
           classes=IC.classes,
           save=IC.save, 
           save_dir=IC.save_dir

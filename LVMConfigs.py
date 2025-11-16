@@ -8,14 +8,15 @@ class LoggingConfigs:
 
 class ModelConfigs:
 
-    target_descriptions = ['person'] #a list of descriptions of each object to be detected by the model, including
+    target_descriptions = ['badminton birdy'] #a list of descriptions of each object to be detected by the model, including
     #labeling, training, validating, and predicting. The description is a text prompt, so descriptive words help
-    #be more specifc, ex: 'small red car'
+    #be more specifc, ex: 'small red car'. This also has a low succses rate for less common objects.
     learning_rate = 0.5
     steps = 10000
-    batch_size = 20
-    min_conf = 0.4 #minimum conference theshold to detect objects
-    epochs = 5
+    batch_size = 10
+    min_conf = 0.3 #minimum confidence theshold to detect objects in prediction, val, and train
+    min_label_conf = 0.07 #minimum confidence threshold for the wolrd model to detect objects to label
+    epochs = 3
     image_width = 2556 #width in pixels of image to be labeled, check camera dimensions
     image_height = 1440 #height in pixels of image to be labeled, check camera dimensions
 
@@ -47,8 +48,7 @@ class CameraConfigs:
 class PathConfigs:
 
     custom_model_path = 'custom_yoloworld_model.pt' #path to the custom model created via trainig and labels
-    label_making_model_path = 'yolov8s-worldv2.pt' #path to the pre-existing model used by ImageLabeler to label
-    #train and val images
+    label_making_model_path = 'yolov8s-worldv2.pt' #path to the pre-existing YOLOworld model used by ImageLabeler
     unlabeled_images_dir = r"C:/Users/nicho/Documents/Robotics/rivals-2025-season/datasets/birdies/images/train"
     #the location of images to be labeled in ImageLabeler
     labeled_images_dir = r"C:/Users/nicho/Documents/Robotics/rivals-2025-season/datasets/birdies/labels/train"
