@@ -1,3 +1,6 @@
+use pyo3::prelude::*;
+use pyo3::types::{PyModule, PyAny};
+
 use core::time::Duration;
 
 use rppal::gpio::Gpio;
@@ -10,7 +13,7 @@ mod shooter;
 mod intake;
 mod comms;
 
-fn main() {
+fn main() -> PyResult<()> {
     println!("Initializing");
 
     let gpio = Gpio::new().unwrap();
@@ -46,4 +49,23 @@ fn main() {
 
         std::thread::sleep(Duration::from_millis(10));
     }
+
+    //initialize python interperter
+    Python::with_gil(|py| { //get python Global Interperter Lock thread
+        let sys = PyModule::import(py, "sys")?; //import python module "sys" to handle python parameters,
+        //the question mark operator converts python exceptions into rust exceptions of PyModule objects
+        let path = sys.getattr("C:\\Users\\nicho\\Documents\\Robotics\\rivals-2025-season")?; //get sys path
+        path.call_method1("append", ("./",))?; //add current directory to path visible by python
+
+        let py_module = PyModule::import(py, "ThreadHandler")?; //import ThreadHandler.py file
+        let py_class = py_module.getattr("ThreadHandler")?; //get ThreadHandler class from imported file
+        let py_class_instance = py_class.call0()?; //instantiate ThreadHandler as "ThreadHandler"
+
+        instance.getattr("run")?.call0()?; //call the "run" method in ThreadHandler
+
+        //let greeting_rust: String = greeting_py.extract()?;
+        //println!("{}", greeting_rust); // Output: Hello, Rust User from Python!
+
+        Ok(()) //close python interperter access
+    })
 }
