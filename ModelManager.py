@@ -86,7 +86,7 @@ class ModelManager(Thread):
 
 
       if self.settings.get("train") == True:
-        # Train the model using the 'dataset.yaml' dataset
+        #train the model using the 'dataset.yaml' dataset
         train_results = self.model.train(
           model=PC.custom_model_path, 
           data=PC.dataset_path,
@@ -96,6 +96,7 @@ class ModelManager(Thread):
           lr0=MC.initial_learning_rate,
           lrf=MC.learning_rate_multiplier,
           classes=IC.classes,
+          amp=MC.use_amp,
           save=IC.save, 
           save_dir=IC.save_dir
           )
