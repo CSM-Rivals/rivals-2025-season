@@ -45,3 +45,16 @@
 # Added by cargo
 
 /target
+
+
+target/
+
+.DS_Store
+Thumbs.db
+
+.idea/
+.vscode/
+*.swp
+*.swo
+
+vendor/
