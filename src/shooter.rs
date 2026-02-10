@@ -1,6 +1,7 @@
+#[cfg(target_os = "linux")]
 use rppal::gpio::Gpio;
+#[cfg(target_os = "linux")]
 use uom::si::angular_velocity::{AngularVelocity, revolution_per_minute};
-
 use crate::hardware::motor::{OpenLoopMotor, PWMMotor};
 
 pub struct Shooter {
@@ -8,10 +9,18 @@ pub struct Shooter {
 }
 
 impl Shooter {
+    #[cfg(target_os = "linux")]
     pub fn new(gpio: &Gpio, pin: u8, reverse_pin: u8) -> Shooter {
-        println!("Shooter startup");
         Shooter {
             motor: PWMMotor::new(gpio.get(pin).unwrap().into_output(), Some(gpio.get(reverse_pin).unwrap().into_output()), AngularVelocity::new::<revolution_per_minute>(1000.0)),
+        }
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    pub fn new(_gpio: &u8, pin: u8, reverse_pin: u8) -> Shooter {
+    println!("Shooter startup SIM");
+        Shooter {
+            motor: PWMMotor::new(pin, Some(reverse_pin), 1000.0),
         }
     }
 

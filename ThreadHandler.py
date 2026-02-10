@@ -66,6 +66,7 @@ class ThreadHandler:
 
         finally:
             self.stop()
+            return 10                          #TODO: add retun type
 
     #end multithreading and rejoin threads
     def stop(self):
@@ -78,6 +79,15 @@ class ThreadHandler:
         
         cv2.destroyAllWindows()
 
-if __name__ == "__main__":
-    program = ThreadHandler()
-    program.run()
+    #method called by main.rs
+    def access_python(self):
+        program = ThreadHandler()
+        return program.run()
+    
+    def debug(self):
+        return 10
+
+#main.rs will not call this, but useful for python debugging
+# if __name__ == "__main__":
+#     program = ThreadHandler()
+#     program.run()

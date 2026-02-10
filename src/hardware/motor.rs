@@ -1,13 +1,18 @@
 use std::time::Duration;
-
+#[cfg(target_os = "linux")]
 use rppal::gpio::OutputPin;
+#[cfg(target_os = "linux")]
 use uom::si::f64::*;
 
 pub trait OpenLoopMotor {
     fn set_power(&mut self, power: f64);
+    #[cfg(target_os = "linux")]
     fn set_velocity(&mut self, velocity: AngularVelocity);
+    #[cfg(not(target_os = "linux"))]
+    fn set_velocity(&mut self, velocity: f64);
 }
 
+#[cfg(target_os = "linux")]
 pub struct PWMMotor {
     pin: OutputPin,
     reverse_pin: Option<OutputPin>,
@@ -18,6 +23,8 @@ pub struct PWMMotor {
 
     power: f64,
 }
+
+#[cfg(target_os = "linux")]
 impl PWMMotor {
     pub fn new(
         pin: OutputPin,
@@ -54,6 +61,7 @@ impl PWMMotor {
     }
 }
 
+#[cfg(target_os = "linux")]
 impl OpenLoopMotor for PWMMotor {
     fn set_power(&mut self, power: f64) {
         match &mut self.reverse_pin {
@@ -82,5 +90,42 @@ impl OpenLoopMotor for PWMMotor {
 
     fn set_velocity(&mut self, velocity: AngularVelocity) {
         self.set_power((velocity / self.max_velocity).value);
+    }
+}
+
+//Below is SIM implementation for windows when the linux os from the pi is not targeted
+//TODO: change printlines to update an actual simulation
+
+#[cfg(not(target_os = "linux"))]
+pub struct PWMMotor {
+    _pin_info: String,
+    power: f64,
+}
+
+#[cfg(not(target_os = "linux"))]
+impl PWMMotor {
+    // We change the arguments to types that exist on Windows (u8 instead of OutputPin)
+    pub fn new(_pin: u8, _reverse_pin: Option<u8>, _max_velocity: f64) -> PWMMotor {
+        println!("SIM: PWMMotor initialized on Windows");
+        PWMMotor {
+            _pin_info: format!("Pin {}", _pin),
+            power: 0.0,
+        }
+    }
+
+    pub fn set_pwm_config(&mut self, _: Duration, _: Duration, _: Duration) {
+        println!("SIM: PWM Config updated");
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+impl OpenLoopMotor for PWMMotor {
+    fn set_power(&mut self, power: f64) {
+        self.power = power;
+        println!("SIM: Setting power to {}", power);
+    }
+
+    fn set_velocity(&mut self, velocity: f64) {
+        println!("SIM: Setting velocity to {}", velocity);
     }
 }

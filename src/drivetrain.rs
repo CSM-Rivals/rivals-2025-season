@@ -1,6 +1,7 @@
 use std::time::Duration;
-
+#[cfg(target_os = "linux")]
 use rppal::gpio::Gpio;
+#[cfg(target_os = "linux")]
 use uom::si::angular_velocity::{revolution_per_minute, AngularVelocity};
 
 use crate::hardware::motor::{OpenLoopMotor, PWMMotor};
@@ -15,12 +16,23 @@ pub struct Motors {
 }
 
 impl Motors {
+    #[cfg(target_os = "linux")]
     pub fn new(gpio: &Gpio, bl_pin: u8, br_pin: u8, fl_pin: u8, fr_pin: u8) -> Motors {
         Motors {
             bl: PWMMotor::new(gpio.get(bl_pin).unwrap().into_output(), None, AngularVelocity::new::<revolution_per_minute>(1000.0)),
             br: PWMMotor::new(gpio.get(br_pin).unwrap().into_output(), None, AngularVelocity::new::<revolution_per_minute>(1000.0)),
             fl: PWMMotor::new(gpio.get(fl_pin).unwrap().into_output(), None, AngularVelocity::new::<revolution_per_minute>(1000.0)),
             fr: PWMMotor::new(gpio.get(fr_pin).unwrap().into_output(), None, AngularVelocity::new::<revolution_per_minute>(1000.0)),
+        }
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    pub fn new(_gpio: &u8, bl_pin: u8, br_pin: u8, fl_pin: u8, fr_pin: u8) -> Motors {
+        Motors {
+            bl: PWMMotor::new(bl_pin, None, 1000.0),
+            br: PWMMotor::new(br_pin, None, 1000.0),
+            fl: PWMMotor::new(fl_pin, None, 1000.0),
+            fr: PWMMotor::new(fr_pin, None, 1000.0),
         }
     }
 
