@@ -14,10 +14,10 @@ class ThreadHandler:
         self.frame_queue = Queue(maxsize=1) 
         self.results_queue = Queue(maxsize=1)
 
-        #Assign settings object to Handler to hand down to each class it is used in.
+        #assign settings object to Handler to hand down to each class it is used in.
         self.settings_reader = SettingsReader()
         self.json_settings = self.settings_reader.load_settings("lvm_settings.json")
-        #Create a labeler object and try to label
+        #create a labeler object and try to label
         self.labeler = ImageLabeler(self.json_settings)
         self.labeler.label()
         
@@ -33,7 +33,7 @@ class ThreadHandler:
             self.json_settings
             )
         
-        #Create daemons (type of thread) to run the seperate threads
+        #create daemons (type of thread) to run the seperate threads
         self.camera_thread.daemon = True
         self.prediction_thread.daemon = True
 
@@ -55,7 +55,7 @@ class ThreadHandler:
                     #signal that the result has been consumed
                     self.results_queue.task_done() 
 
-                #RUN OTHER ROBOT CODE HERE!!!
+                #RUN OTHER PYTHON CODE HERE!!!
 
                 #break loop on 'q' press (might be ctr + c)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -79,13 +79,13 @@ class ThreadHandler:
         
         cv2.destroyAllWindows()
 
-    #method called by main.rs
-    def access_python(self):
-        program = ThreadHandler()
-        return program.run()
+#method called by main.rs
+def access_python():
+    program = ThreadHandler()
+    return program.run()
     
-    def debug(self):
-        return 10
+def debug():
+    return "Python Accessed Succesfuly"
 
 #main.rs will not call this, but useful for python debugging
 # if __name__ == "__main__":

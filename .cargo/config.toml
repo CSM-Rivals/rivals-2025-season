@@ -6,3 +6,6 @@
 
 # [net]
 # offline = true
+
+# [env]
+# PYO3_PYTHON = "venv/Scripts/python.exe"

@@ -12,6 +12,7 @@ serde = { version = "1.0.228", features=["derive"] }
 uom = "0.37.0"
 pyo3 = { version = "0.23", features = ["auto-initialize", "extension-module"] }
 fs = "0.0.5"
+device_query = "2.1.0"
 
 [target.aarch64-unknown-linux-gnu]
 linker = "C:/Program Files (x86)/Arm GNU Toolchain aarch64-none-linux-gnu/14.3 rel1/bin/aarch64-none-linux-gnu-ld.exe"

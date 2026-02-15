@@ -9,7 +9,7 @@ class ImageLabeler:
       self.settings = settings
 
    def label(self):
-      #If settings are absent or labeling is false, do not continue any operations
+      #if settings are absent or labeling is false, do not continue any operations
       if not self.settings:
          return
       elif self.settings.get("label") == True:

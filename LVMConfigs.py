@@ -1,4 +1,4 @@
-#Be sure to update each .yaml file when using train or val functionality
+#update each .yaml file when using train or val functionality
 
 class LoggingConfigs:
 

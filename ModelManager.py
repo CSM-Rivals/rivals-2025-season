@@ -23,16 +23,16 @@ class ModelManager(Thread):
     self.results_queue = results_queue
     self.settings = settings
     self.running = True
-    self.model = None #Force the model to exist only in the thread
+    self.model = None #force the model to exist only in the thread
 
-  #Initialize the model exclusivley inside this thread. it is curcial that it stays in this thread
+  #initialize the model exclusivley inside this thread. it is curcial that it stays in this thread
   #so that the model process dosn't interupt regular robot functionality
   def run(self):
 
     #if json settings are absent, do not continue any operations
     if not self.settings:
       return
-    #If none of the operations requiring ModelManager are enabled, don't do anything else in this method.
+    #if none of the operations requiring ModelManager are enabled, don't do anything else in this method.
     elif (self.settings.get('train') == False and self.settings.get('val') == False and self.settings.get('inference') == False):
       return
     
@@ -47,10 +47,10 @@ class ModelManager(Thread):
         WorldModel
         ])
 
-      #Login to Comet
+      #login to Comet
       comet_ml.login(api_key=LC.api_key, project_name=LC.project_name)
 
-      #Run the project
+      #run the project
       experiment = start(
         api_key=LC.api_key,
         project_name=LC.project_name,
@@ -102,7 +102,7 @@ class ModelManager(Thread):
           )
         
       if self.settings.get("val") == True:
-        # Evaluate the model's performance on the validation set
+        #evaluate the model's performance on the validation set
         val_results = self.model.val(
           data=PC.dataset_path, 
           conf=MC.min_conf, 
@@ -142,7 +142,7 @@ class ModelManager(Thread):
               )
 
 
-            #Results methods
+            #results methods
             #results.show() # display the results to the screen
             #results_at_time_t = results.new() #makes a copy of the contents of results when this method is called
             #results_file = results.save() #saves results to a file, stored in the results_file object
@@ -150,17 +150,17 @@ class ModelManager(Thread):
 
             results = list(results_generator) #convert the generator object to a list
 
-            #Access each frame of the video (each frame is an entry in the results list)
+            #access each frame of the video (each frame is an entry in the results list)
             for i, frame in enumerate(results):
-                #Display annotated image in Comet
+                #display annotated image in Comet
                 annotated_frame = frame.plot()
                 experiment.log_image(annotated_frame, name="annotated_camera_frame")
 
                 bb = frame.boxes
                 for box in bb:
-                  #Get cords
+                  #get cords
                   x1, y1, x2, y2 = box.xyxy[0].tolist()
-                  #Define Center
+                  #define Center
                   center_x = (x1 + x2) / 2
                   center_y = (y1 + y2) / 2
                   image_width = frame.orig_shape[1] # Original image width
@@ -189,7 +189,7 @@ class ModelManager(Thread):
                 # frame.save(filename=f"image{i}.jpg")
 
 
-            # Put the result (frame + detections) into the output queue
+            #put the result (frame + detections) into the output queue
             if not self.results_queue.full():
                 self.results_queue.put((frame, results))
             

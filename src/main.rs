@@ -4,6 +4,7 @@ use std::time::Duration;
 use std::fs;
 use::std::ffi::CStr;
 use std::ffi::CString;
+use device_query::{DeviceQuery, DeviceState, Keycode};
 #[cfg(target_os = "linux")]
 use rppal::gpio::Gpio;
 
@@ -34,6 +35,8 @@ fn main() -> PyResult<()> {
 
     let mut input = Input::new();
 
+    let device_state = DeviceState::new();
+
     println!("Done initializing, waiting for ESC startup...");
     // drivetrain_motors.startup();
     println!("ESC startup finished");
@@ -43,9 +46,19 @@ fn main() -> PyResult<()> {
 
     //initialize python interperter and GIL
     Python::with_gil(|py| -> PyResult<()>{
-        //read file as c language string
+
+        //add the site-packages and cuurent directory to path
+        let sys = py.import("sys")?;
+        let path = sys.getattr("path")?;
+        path.call_method1("append", ("./venv/Lib/site-packages",))?;
+        path.call_method1("append", (".",))?;
+
+        //read file as c language string (raw -> c string)
         let file_path = "ThreadHandler.py";
-        let py_code_c = CString::new(file_path).map_err(|e| {
+        let py_code_raw = fs::read_to_string(file_path).map_err(|e| {
+            PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Null byte in Python code: {}", e))
+        })?;
+        let py_code_c = CString::new(py_code_raw).map_err(|e| {
             PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Null byte in Python code: {}", e))
         })?;
 
@@ -54,7 +67,7 @@ fn main() -> PyResult<()> {
 
         let th_module = PyModule::from_code(
             py, 
-            &py_code_c, 
+            py_code_c.as_c_str(), 
             file_name,
             module_name
         )?;
@@ -70,6 +83,7 @@ fn main() -> PyResult<()> {
         Ok(())
     })?;
 
+    //break out of main control loop with 'E' key
     let mut i: u32 = 0;
     loop {
         i += 1;
@@ -84,6 +98,12 @@ fn main() -> PyResult<()> {
         shooter.update(input.state.y);
         intake.update(input.state.x);
 
+        let keys: Vec<Keycode> = device_state.get_keys();
+        if keys.contains(&Keycode::E) {
+            break;
+        }
+
         std::thread::sleep(Duration::from_millis(10));
-    } 
+    }
+    Ok(())
 }
