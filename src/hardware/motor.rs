@@ -122,7 +122,7 @@ impl PWMMotor {
 impl OpenLoopMotor for PWMMotor {
     fn set_power(&mut self, power: f64) {
         self.power = power;
-        println!("SIM: Setting power to {}", power);
+        // println!("SIM: Setting power to {}", power);    //TODO: uncomment
     }
 
     fn set_velocity(&mut self, velocity: f64) {

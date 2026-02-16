@@ -37,36 +37,27 @@ class ThreadHandler:
         self.camera_thread.daemon = True
         self.prediction_thread.daemon = True
 
-    def run(self):
+    def run_internal_threads(self):
         self.camera_thread.start()
         self.prediction_thread.start()
-        print("Thread Handler active, (Press 'q' to exit)")
 
-        try:
-            while True:
-                #get newest frame from the queue
-                if not self.results_queue.empty():
-                    processed_frame, results = self.results_queue.get()
-                    
-                    #display annotated frame
-                    annotated_frame = results[0].plot() #0 is the first item of the queue
-                    cv2.imshow("Annotated Camera Feed", annotated_frame)
-                    
-                    #signal that the result has been consumed
-                    self.results_queue.task_done() 
+    def get_latest_results(self):
+        #Non-blocking check for new data to return to Rust
+        if not self.results_queue.empty():
+            processed_frame, results = self.results_queue.get()
+            
+            # Optional: Keep showing the window if you need it for debugging
+            annotated_frame = results[0].plot()
+            cv2.imshow("Annotated Camera Feed", annotated_frame)
+            cv2.waitKey(1)  #press any key???
 
-                #RUN OTHER PYTHON CODE HERE!!!
-
-                #break loop on 'q' press (might be ctr + c)
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    break
-
-        except KeyboardInterrupt:
-            print("Program interrupted: 'q' pressed")
-
-        finally:
-            self.stop()
-            return 10                          #TODO: add retun type
+            # Prepare the data for Rust (convert results object to a string/JSON)
+            # Assuming 'results' has a way to get coordinates or classes
+            detection_summary = str(results[0].boxes.data.tolist()) 
+            
+            self.results_queue.task_done()
+            return detection_summary
+        return None
 
     #end multithreading and rejoin threads
     def stop(self):
@@ -81,8 +72,7 @@ class ThreadHandler:
 
 #method called by main.rs
 def access_python():
-    program = ThreadHandler()
-    return program.run()
+    return ThreadHandler()
     
 def debug():
     return "Python Accessed Succesfuly"
