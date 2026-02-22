@@ -169,16 +169,19 @@ fn main() -> PyResult<()> {
 
                         println!("Target Detected! Center X: {:.2}, Conf: {:.2}", x_pos, confidence);
 
-                        // Example Robot Logic using the named fields
+                        //apply respective drivetrain and subsystem logic
                         if x_pos < 200.0 { 
                             println!("Steer Left!"); 
                         } else if x_pos > 400.0 { 
                             println!("Steer Right!"); 
                         }
+                        else{
+                            println!("Straight Ahead!")
+                        }
                     }
                 }
                 Err(e) => {
-                    // This catches cases where Python sends "[]" or malformed strings
+                    //if no raw data or malformed strings
                     if cv_data != "[]" {
                         eprintln!("Failed to parse CV Data: {} | Error: {}", cv_data, e);
                     }

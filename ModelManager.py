@@ -34,40 +34,6 @@ class ModelManager(Thread):
     #initialize the model exclusivley inside this thread. it is curcial that it stays in this thread
     #so that the model process dosn't interupt regular robot functionality
     def run(self):
-        # print("Python: ModelManager initializing YOLO...", flush=True)
-        # try:
-        #   # Initialize model inside the thread
-        #   self.model = YOLO("yolov8n.pt") 
-        #   print("Python: ModelManager is ready and looping.", flush=True)
-
-        #   self.is_ready = True
-
-        #   while self.running:
-        #       try:
-        #           # Timeout is critical to allow checking self.running
-        #           frame = self.frame_queue.get(timeout=0.5)
-                
-        #           results = self.model.predict(source=frame, device='cpu', conf=0.25, verbose=False)
-
-        #           data_to_send = str(results[0].boxes.data.tolist())
-                        
-        #           # 4. DEBUG PRINT (Helpful to see if YOLO is actually "hitting")
-        #           if data_to_send != "[]":
-        #               print(f"Python: YOLO found something! {data_to_send}", flush=True)
-                
-        #           if not self.results_queue.full():
-        #               try:
-        #                   self.results_queue.put_nowait(data_to_send)
-        #               except:
-        #                   pass
-                        
-        #           self.frame_queue.task_done()
-        #       except Exception: # Includes Queue.Empty timeout
-        #           continue
-        # except Exception as e:
-        #   print(f"CRITICAL: ModelManager failed: {e}", flush=True)
-            
-
         #if json settings are absent, do not continue any operations
         if not self.settings:
             return
@@ -77,6 +43,7 @@ class ModelManager(Thread):
         
         else:
             time.sleep(0.5)
+            self.is_ready = True
             print("ModelManager Running", flush=True)
 
         try:
@@ -91,15 +58,16 @@ class ModelManager(Thread):
                 ])
 
             #login to Comet
-            # comet_ml.login(api_key=LC.api_key, project_name=LC.project_name)
+            comet_ml.login(api_key=LC.api_key, project_name=LC.project_name)
 
-            experiment = None
+            # experiment = None
+
             #run the project
-            # experiment = start(
-            #   api_key=LC.api_key,
-            #   project_name=LC.project_name,
-            #   workspace=LC.user
-            # )
+            experiment = start(
+              api_key=LC.api_key,
+              project_name=LC.project_name,
+              workspace=LC.user
+            )
 
             #report multiple hyperparameters using a dictionary:
             hyper_params = {
@@ -107,7 +75,7 @@ class ModelManager(Thread):
             "steps": MC.steps,
             "batch_size": MC.batch_size,
             }
-            # experiment.log_parameters(hyper_params)
+            experiment.log_parameters(hyper_params)
 
             #log an image prediction every nth batch.
             os.environ["COMET_EVAL_BATCH_LOGGING_INTERVAL"] = "1" #n value
@@ -134,8 +102,6 @@ class ModelManager(Thread):
             weighted_model = YOLO(PC.best_weights)
             weighted_model.set_classes(MC.target_descriptions)
             print("Python: Models loaded. Entering loop.", flush=True)
-
-            self.is_ready = True
 
 
             if self.settings.get("train") == True:
@@ -196,20 +162,13 @@ class ModelManager(Thread):
                             cache=IC.cache #prevents .npy files from being stored in directory as temporary storage, instead using ram
                             )
 
-
-                        #results methods
-                        #results.show() # display the results to the screen
-                        #results_at_time_t = results.new() #makes a copy of the contents of results when this method is called
-                        #results_file = results.save() #saves results to a file, stored in the results_file object
-                        #results.to_json() #converts the results file to a JSON file. Useful to be read by C++ or Rust code.
-
                         results = list(results_generator) #convert the generator object to a list
 
                         #access each frame of the video (each frame is an entry in the results list)
                         for i, frame in enumerate(results):
                             #display annotated image in Comet
                             annotated_frame = frame.plot()
-                            # experiment.log_image(annotated_frame, name="annotated_camera_frame")
+                            experiment.log_image(annotated_frame, name="annotated_camera_frame")
 
                             detections = []
                             for box in frame.boxes:
