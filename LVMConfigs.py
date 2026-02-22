@@ -28,7 +28,7 @@ class ModelConfigs:
 class InferenceConfigs:
 
     iou = 0.7 #IOU for NMS
-    device = 0 #cpu/gpu device ID (ex: '0', or "0, 1" for two or more devices). '0' for default CPU.
+    device = 'cpu' #cpu/gpu device ID (ex: '0', or "0, 1" for two or more devices). '0' for default CPU.
     stream_buffer = False #when true, frames are queued for processing, non skipped. When false,
     #frames are skipped if the queue is full.
     visualize = False #visualize model's interpertation with .npy and .jpg files for debugging
@@ -48,7 +48,7 @@ class InferenceConfigs:
 
 class CameraConfigs:
 
-    id = 0 #0 is default device camera, usually webcam on laptops
+    id = 2 #0 is default device camera, usually webcam on laptops
 
 class PathConfigs:
 

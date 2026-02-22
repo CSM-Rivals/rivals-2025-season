@@ -1,6 +1,7 @@
 from threading import Thread
 import cv2
 import time
+import numpy as np
 
 class CameraReader(Thread):
 
@@ -9,25 +10,49 @@ class CameraReader(Thread):
         self.camera_id = camera_id
         self.frame_queue = frame_queue
         self.running = True
+        self.daemon = True
+        self.is_ready = False
     
     def run(self):
-        """The main execution method for the thread."""
-        cap = cv2.VideoCapture(self.camera_id)
-        print(f"Camera opened: {cap.isOpened()}")
+        print("Python: CameraReader thread entered run()", flush=True)
+    
+        # List of backends to try
+        backends = [cv2.CAP_DSHOW, cv2.CAP_MSMF, cv2.CAP_ANY]
+        cap = None
 
-        while self.running and cap.isOpened():
+        # Try index 0 and 1 with different backends
+        for index in [0, 1]:
+            for backend in backends:
+                print(f"Python: Attempting Camera {index} with backend {backend}...", flush=True)
+                cap = cv2.VideoCapture(index + backend)
+                if cap.isOpened():
+                    print(f"Python: SUCCESS! Connected to Camera {index} using backend {backend}", flush=True)
+                    break
+            if cap and cap.isOpened():
+                break
+
+        self.is_ready = True # Handshake signal for Rust
+
+        while self.running:
+            if not cap.isOpened():
+                # Simulation Mode
+                sim_frame = np.zeros((480, 640, 3), dtype=np.uint8)
+                cv2.rectangle(sim_frame, (100, 100), (200, 200), (255, 255, 255), -1)
+                # sim_frame = np.full((480, 640, 3), 128, dtype=np.uint8)
+                # if not self.frame_queue.full():
+                #     try: self.frame_queue.put_nowait(sim_frame)
+                #     except: pass
+                # time.sleep(0.1)
+                continue
+
             success, frame = cap.read()
             if success:
-                #add frame to queue if not full
                 if not self.frame_queue.full():
-                    self.frame_queue.put(frame)
-            else:
-                print("Failed to read frame.")
-                break
-            time.sleep(0.01) #delay to control frame rate of input
+                    try: self.frame_queue.put_nowait(frame)
+                    except: pass
+            time.sleep(0.01)
 
         cap.release()
-        print("Camera capture thread stopped.")
 
     def stop(self):
         self.running = False
