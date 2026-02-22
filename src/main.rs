@@ -1,5 +1,6 @@
 use pyo3::prelude::*;
 use pyo3::types::PyModule;
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use std::time::Instant;
 use std::sync::Arc;
@@ -21,6 +22,14 @@ mod drivetrain;
 mod shooter;
 mod intake;
 mod comms;
+
+#[derive(Debug, Deserialize, Serialize)]
+struct Detection {
+    coords: [f64; 4],   // [x1, y1, x2, y2]
+    conf: f64,
+    class: i32,
+    center_x: f64,
+}
 
 fn main() -> PyResult<()> {
     std::env::set_var("PYTHONUNBUFFERED", "1");
@@ -150,20 +159,29 @@ fn main() -> PyResult<()> {
 
         // Process all pending CV data
         while let Ok(cv_data) = rx.try_recv() {
-            println!("Raw CV Data: {}", cv_data);
-            
-            // Parse the JSON string from Python
-            let v: serde_json::Value = serde_json::from_str(&cv_data).unwrap_or(serde_json::Value::Null);
-            
-            if let Some(detections) = v.as_array() {
-                for det in detections {
-                    let x1 = det[0].as_f64().unwrap_or(0.0);
-                    let conf = det[4].as_f64().unwrap_or(0.0);
-                    println!("Target detected at X: {:.2} with confidence: {:.2}", x1, conf);
-                    
-                    // Example logic:
-                    if x1 < 200.0 { println!("Steer Left!"); }
-                    else if x1 > 400.0 { println!("Steer Right!"); }
+            // Attempt to parse the JSON string into our list of Detection structs
+            match serde_json::from_str::<Vec<Detection>>(&cv_data) {
+                Ok(detections) => {
+                    for det in detections {
+                        // Now you can access fields by name!
+                        let x_pos = det.center_x;
+                        let confidence = det.conf;
+
+                        println!("Target Detected! Center X: {:.2}, Conf: {:.2}", x_pos, confidence);
+
+                        // Example Robot Logic using the named fields
+                        if x_pos < 200.0 { 
+                            println!("Steer Left!"); 
+                        } else if x_pos > 400.0 { 
+                            println!("Steer Right!"); 
+                        }
+                    }
+                }
+                Err(e) => {
+                    // This catches cases where Python sends "[]" or malformed strings
+                    if cv_data != "[]" {
+                        eprintln!("Failed to parse CV Data: {} | Error: {}", cv_data, e);
+                    }
                 }
             }
         }

@@ -1,11 +1,7 @@
 import comet_ml
 from comet_ml import start
 from comet_ml.integration.pytorch import log_model
-try:
-    from ultralytics import YOLO
-except ImportError:
-    print("Python Error: ultralytics not installed in venv", flush=True)
-# from ultralytics import YOLO
+from ultralytics import YOLO
 from ultralytics import YOLOWorld
 import ultralytics
 import torch
@@ -13,6 +9,7 @@ from ultralytics.nn.tasks import WorldModel
 import cv2
 import time
 import os
+import json
 from threading import Thread
 from CameraReader import CameraReader
 from LVMConfigs import LoggingConfigs as LC
@@ -23,263 +20,236 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["OMP_NUM_THREADS"] = "1"
 
 class ModelManager(Thread):
-  def __init__(self, model_path, frame_queue, results_queue, settings):
-    super().__init__()
-    self.model_path = model_path
-    self.frame_queue = frame_queue
-    self.results_queue = results_queue
-    self.settings = settings
-    self.running = True
-    self.model = None #force the model to exist only in the thread
-    self.daemon = True
-    self.is_ready = False
+    def __init__(self, model_path, frame_queue, results_queue, settings):
+        super().__init__()
+        self.model_path = model_path
+        self.frame_queue = frame_queue
+        self.results_queue = results_queue
+        self.settings = settings
+        self.running = True
+        self.model = None #force the model to exist only in the thread
+        self.daemon = True
+        self.is_ready = False
 
-  #initialize the model exclusivley inside this thread. it is curcial that it stays in this thread
-  #so that the model process dosn't interupt regular robot functionality
-  def run(self):
-    print("Python: ModelManager initializing YOLO...", flush=True)
-    try:
-      # Initialize model inside the thread
-      self.model = YOLO("yolov8n.pt") 
-      print("Python: ModelManager is ready and looping.", flush=True)
+    #initialize the model exclusivley inside this thread. it is curcial that it stays in this thread
+    #so that the model process dosn't interupt regular robot functionality
+    def run(self):
+        # print("Python: ModelManager initializing YOLO...", flush=True)
+        # try:
+        #   # Initialize model inside the thread
+        #   self.model = YOLO("yolov8n.pt") 
+        #   print("Python: ModelManager is ready and looping.", flush=True)
 
-      self.is_ready = True
+        #   self.is_ready = True
 
-      while self.running:
-          try:
-              # Timeout is critical to allow checking self.running
-              frame = self.frame_queue.get(timeout=0.5)
-              
-              results = self.model.predict(source=frame, device='cpu', conf=0.25, verbose=False)
+        #   while self.running:
+        #       try:
+        #           # Timeout is critical to allow checking self.running
+        #           frame = self.frame_queue.get(timeout=0.5)
+                
+        #           results = self.model.predict(source=frame, device='cpu', conf=0.25, verbose=False)
 
-              data_to_send = str(results[0].boxes.data.tolist())
-                    
-              # 4. DEBUG PRINT (Helpful to see if YOLO is actually "hitting")
-              if data_to_send != "[]":
-                  print(f"Python: YOLO found something! {data_to_send}", flush=True)
-              
-              if not self.results_queue.full():
-                  try:
-                      self.results_queue.put_nowait(data_to_send)
-                  except:
-                      pass
-                    
-              self.frame_queue.task_done()
-          except Exception: # Includes Queue.Empty timeout
-              continue
-    except Exception as e:
-      print(f"CRITICAL: ModelManager failed: {e}", flush=True)
+        #           data_to_send = str(results[0].boxes.data.tolist())
+                        
+        #           # 4. DEBUG PRINT (Helpful to see if YOLO is actually "hitting")
+        #           if data_to_send != "[]":
+        #               print(f"Python: YOLO found something! {data_to_send}", flush=True)
+                
+        #           if not self.results_queue.full():
+        #               try:
+        #                   self.results_queue.put_nowait(data_to_send)
+        #               except:
+        #                   pass
+                        
+        #           self.frame_queue.task_done()
+        #       except Exception: # Includes Queue.Empty timeout
+        #           continue
+        # except Exception as e:
+        #   print(f"CRITICAL: ModelManager failed: {e}", flush=True)
+            
+
+        #if json settings are absent, do not continue any operations
+        if not self.settings:
+            return
+        #if none of the operations requiring ModelManager are enabled, don't do anything else in this method.
+        elif (self.settings.get('train') == False and self.settings.get('val') == False and self.settings.get('inference') == False):
+            return
         
+        else:
+            time.sleep(0.5)
+            print("ModelManager Running", flush=True)
 
-    # #if json settings are absent, do not continue any operations
-    # if not self.settings:
-    #   return
-    # #if none of the operations requiring ModelManager are enabled, don't do anything else in this method.
-    # elif (self.settings.get('train') == False and self.settings.get('val') == False and self.settings.get('inference') == False):
-    #   return
-    
-    # else:
-    #   time.sleep(0.5)
-    #   print("ModelManager Running", flush=True)
+        try:
+            #whitelist WorldModel class and others to pytorch safe globals list
+            torch.serialization.add_safe_globals(
+                [torch.nn.modules.container.Sequential, 
+                ultralytics.nn.modules.conv.Conv,
+                torch.nn.modules.conv.Conv2d,
+                torch.nn.modules.activation.SiLU,
+                getattr,
+                WorldModel
+                ])
 
-    #   try:
-    #     # import comet_ml
-    #     # from comet_ml import start
-    #     # from comet_ml.integration.pytorch import log_model
-    #     # from ultralytics import YOLO
-    #     # from ultralytics import YOLOWorld
-    #     # import ultralytics
-    #     # import torch
-    #     # from ultralytics.nn.tasks import WorldModel
-    #     # import cv2
+            #login to Comet
+            # comet_ml.login(api_key=LC.api_key, project_name=LC.project_name)
 
-    #     #whitelist WorldModel class and others to pytorch safe globals list
-    #     torch.serialization.add_safe_globals(
-    #       [torch.nn.modules.container.Sequential, 
-    #       ultralytics.nn.modules.conv.Conv,
-    #       torch.nn.modules.conv.Conv2d,
-    #       torch.nn.modules.activation.SiLU,
-    #       getattr,
-    #       WorldModel
-    #       ])
+            experiment = None
+            #run the project
+            # experiment = start(
+            #   api_key=LC.api_key,
+            #   project_name=LC.project_name,
+            #   workspace=LC.user
+            # )
 
-    #     #login to Comet
-    #     # comet_ml.login(api_key=LC.api_key, project_name=LC.project_name)
+            #report multiple hyperparameters using a dictionary:
+            hyper_params = {
+            "learning_rate": MC.initial_learning_rate,
+            "steps": MC.steps,
+            "batch_size": MC.batch_size,
+            }
+            # experiment.log_parameters(hyper_params)
 
-    #     experiment = None
-    #     #run the project
-    #     # experiment = start(
-    #     #   api_key=LC.api_key,
-    #     #   project_name=LC.project_name,
-    #     #   workspace=LC.user
-    #     # )
+            #log an image prediction every nth batch.
+            os.environ["COMET_EVAL_BATCH_LOGGING_INTERVAL"] = "1" #n value
 
-    #     #report multiple hyperparameters using a dictionary:
-    #     hyper_params = {
-    #       "learning_rate": MC.initial_learning_rate,
-    #       "steps": MC.steps,
-    #       "batch_size": MC.batch_size,
-    #     }
-    #     # experiment.log_parameters(hyper_params)
+            #environment variables for automatic histogram logging
+            os.environ["COMET_AUTO_HISTOGRAM_WEIGHT_LOGGING"] = "True"
+            os.environ["COMET_AUTO_HISTOGRAM_GRADIENT_LOGGING"] = "True"
+            os.environ["COMET_AUTO_HISTOGRAM_EPOCH_RATE"] = "1" #log every epoch
 
-    #     #log an image prediction every nth batch.
-    #     os.environ["COMET_EVAL_BATCH_LOGGING_INTERVAL"] = "1" #n value
+            #Store log data in a directory while offline that can be uploaded later when connected to the internet
+            #os.environ["COMET_MODE"] = "offline"
 
-    #     #environment variables for automatic histogram logging
-    #     os.environ["COMET_AUTO_HISTOGRAM_WEIGHT_LOGGING"] = "True"
-    #     os.environ["COMET_AUTO_HISTOGRAM_GRADIENT_LOGGING"] = "True"
-    #     os.environ["COMET_AUTO_HISTOGRAM_EPOCH_RATE"] = "1" #log every epoch
+            # 1. Check Path
+            print(f"Python: Checking weight path: {self.model_path}", flush=True)
+            if not os.path.exists(self.model_path):
+                print(f"ERROR: Model file not found at {self.model_path}", flush=True)
+                return
+        
+            print("Python: Loading YOLO models...", flush=True)
+            #load pretrained YOLO model (created by labels from ImageLabeler), used to generate train and val data
+            self.model = YOLOWorld(self.model_path)
+            self.model.set_classes(MC.target_descriptions)
+            #load the weights from a previous training, used to predict an input
+            weighted_model = YOLO(PC.best_weights)
+            weighted_model.set_classes(MC.target_descriptions)
+            print("Python: Models loaded. Entering loop.", flush=True)
 
-    #     #Store log data in a directory while offline that can be uploaded later when connected to the internet
-    #     #os.environ["COMET_MODE"] = "offline"
-
-    #     # 1. Check Path
-    #     print(f"Python: Checking weight path: {self.model_path}", flush=True)
-    #     if not os.path.exists(self.model_path):
-    #         print(f"ERROR: Model file not found at {self.model_path}", flush=True)
-    #         return
-      
-    #     print("Python: Loading YOLO models...", flush=True)
-    #     #load pretrained YOLO model (created by labels from ImageLabeler), used to generate train and val data
-    #     self.model = YOLOWorld(self.model_path)
-    #     self.model.set_classes(MC.target_descriptions)
-    #     #load the weights from a previous training, used to predict an input
-    #     weighted_model = YOLO(PC.best_weights)
-    #     weighted_model.set_classes(MC.target_descriptions)
-    #     print("Python: Models loaded. Entering loop.", flush=True)
+            self.is_ready = True
 
 
-    #     if self.settings.get("train") == True:
-    #       #train the model using the 'dataset.yaml' dataset
-    #       train_results = self.model.train(
-    #         model=PC.custom_model_path, 
-    #         data=PC.dataset_path,
-    #         batch=MC.batch_size, 
-    #         epochs=MC.epochs, 
-    #         patience=MC.patience,
-    #         lr0=MC.initial_learning_rate,
-    #         lrf=MC.learning_rate_multiplier,
-    #         classes=IC.classes,
-    #         amp=MC.use_amp,
-    #         save=IC.save, 
-    #         save_dir=IC.save_dir
-    #         )
-          
-    #     if self.settings.get("val") == True:
-    #       #evaluate the model's performance on the validation set
-    #       val_results = self.model.val(
-    #         data=PC.dataset_path, 
-    #         conf=MC.min_conf, 
-    #         classes=IC.classes, 
-    #         save=IC.save, 
-    #         save_dir=IC.save_dir
-    #         )
+            if self.settings.get("train") == True:
+                #train the model using the 'dataset.yaml' dataset
+                train_results = self.model.train(
+                    model=PC.custom_model_path, 
+                    data=PC.dataset_path,
+                    batch=MC.batch_size, 
+                    epochs=MC.epochs, 
+                    patience=MC.patience,
+                    lr0=MC.initial_learning_rate,
+                    lrf=MC.learning_rate_multiplier,
+                    classes=IC.classes,
+                    amp=MC.use_amp,
+                    save=IC.save, 
+                    save_dir=IC.save_dir
+                    )
+            
+            if self.settings.get("val") == True:
+                #evaluate the model's performance on the validation set
+                val_results = self.model.val(
+                    data=PC.dataset_path, 
+                    conf=MC.min_conf, 
+                    classes=IC.classes, 
+                    save=IC.save, 
+                    save_dir=IC.save_dir
+                    )
 
-    #     if self.settings.get("inference") == True:
-    #       print("Python: ModelManager entering Inference Loop", flush=True)
-    #       while self.running:
-    #         try:
-    #           #block and wait for a frame (with a timeout)
-    #           frame = self.frame_queue.get(timeout=2)
-    #           print(f"DEBUG: ModelManager received frame!", flush=True) 
+            if self.settings.get("inference") == True:
+                print("Python: ModelManager entering Inference Loop", flush=True)
+                while self.running:
+                    try:
+                        #block and wait for a frame (with a timeout)
+                        frame = self.frame_queue.get(timeout=2)
+                        print(f"DEBUG: ModelManager received frame!", flush=True) 
 
-    #           results_generator = weighted_model.predict(
-    #             source=frame, #video frame
-    #             conf=MC.min_conf, #minimum conference theshold to detect objects
-    #             # imgsz=[MC.image_height, MC.image_width],
-    #             iou=IC.iou, #IOU for NMS
-    #             device=IC.device, #cpu/gpu device ID (ex: '0', or "0, 1" for two or more devices). '0' for default CPU.
-    #             batch=MC.batch_size, #batch size
-    #             stream_buffer=IC.stream_buffer, #when true, frames are queued for processing, non skipped. When false,
-    #             #frames are skipped if the queue is full.
-    #             visualize=IC.visualize, #visualize model's interpertation with .npy and .jpg files for debugging
-    #             agnostic_nms=IC.agnostic_nms, #class-agnostic NMS to help differntiate overlapping boxes betweeb seperate classes.
-    #             classes=IC.classes, #filter by class specified in the data file (yaml). -1 for no filterting.
-    #             stream=IC.return_as_generator, #results returned as generator to save memory for large video files
-    #             verbose=IC.console_print, #print results to console
-    #             save=IC.save, #save results to project directory (runs/detect/exp by default).
-    #             #name="prediction", #save results to project/name
-    #             show_boxes=IC.show_boxes, #show bounding boxes
-    #             show_conf=IC.show_conf, #show confidence scores
-    #             show_labels=IC.show_labels, #show class lables
-    #             save_txt=IC.save_txt, #save results to *.txt file
-    #             save_dir=IC.save_dir, #save to a specific directory
-    #             cache=IC.cache #prevents .npy files from being stored in directory as temporary storage, instead using ram
-    #             )
-
-
-    #           #results methods
-    #           #results.show() # display the results to the screen
-    #           #results_at_time_t = results.new() #makes a copy of the contents of results when this method is called
-    #           #results_file = results.save() #saves results to a file, stored in the results_file object
-    #           #results.to_json() #converts the results file to a JSON file. Useful to be read by C++ or Rust code.
-
-    #           results = list(results_generator) #convert the generator object to a list
-
-    #           #access each frame of the video (each frame is an entry in the results list)
-    #           for i, frame in enumerate(results):
-    #               #display annotated image in Comet
-    #               annotated_frame = frame.plot()
-    #               # experiment.log_image(annotated_frame, name="annotated_camera_frame")
-
-    #               bb = frame.boxes
-    #               for box in bb:
-    #                 #get cords
-    #                 x1, y1, x2, y2 = box.xyxy[0].tolist()
-    #                 #define Center
-    #                 center_x = (x1 + x2) / 2
-    #                 center_y = (y1 + y2) / 2
-    #                 image_width = frame.orig_shape[1] # Original image width
-
-    #                 #determine the percision of turning, for more percision, use fractions closer to 1/2
-    #                 if center_x < image_width / 3: #x center is on the left 1/3 of the screen
-    #                   print("Turn left", flush=True)
-    #                 elif center_x > (2 * image_width) / 3: #x center is on the right 1/3 of the screen
-    #                   print("Turn right", flush=True)
-    #                 else: #x center in the middle 1/3 of the screen
-    #                   print("Face forward", flush=True) #run forward until a little after we have the birdy (camera cant see it)
-    #                   #then face the opposite side of the field (do this where other logic is handled) and launch
-
-    #               bb_conf = bb.conf #confidence of boxes
-    #               print(bb)
-
-    #               #Keypoints are the most important part of an object, represented by an xy coordinate.
-    #               #These need to be defined, but are useful for picking up the birdies from the correct angle.
-    #               #kp = r.keypoints
-    #               #kp_array = kp.numpy()
-    #               #coordinates = kp.xy #xy coordinates of keypoints
-    #               #kp_conf = kp.conf
-    #               #print(kp)
-
-    #               # bgr_image = frame.plot() #numpy array ordered by bgr, look at plot() for more arguments
-    #               # frame.save(filename=f"image{i}.jpg")
+                        results_generator = weighted_model.predict(
+                            source=frame, #video frame
+                            conf=MC.min_conf, #minimum conference theshold to detect objects
+                            # imgsz=[MC.image_height, MC.image_width],
+                            iou=IC.iou, #IOU for NMS
+                            device=IC.device, #cpu/gpu device ID (ex: '0', or "0, 1" for two or more devices). '0' for default CPU.
+                            batch=MC.batch_size, #batch size
+                            stream_buffer=IC.stream_buffer, #when true, frames are queued for processing, non skipped. When false,
+                            #frames are skipped if the queue is full.
+                            visualize=IC.visualize, #visualize model's interpertation with .npy and .jpg files for debugging
+                            agnostic_nms=IC.agnostic_nms, #class-agnostic NMS to help differntiate overlapping boxes betweeb seperate classes.
+                            classes=IC.classes, #filter by class specified in the data file (yaml). -1 for no filterting.
+                            stream=IC.return_as_generator, #results returned as generator to save memory for large video files
+                            verbose=IC.console_print, #print results to console
+                            save=IC.save, #save results to project directory (runs/detect/exp by default).
+                            #name="prediction", #save results to project/name
+                            show_boxes=IC.show_boxes, #show bounding boxes
+                            show_conf=IC.show_conf, #show confidence scores
+                            show_labels=IC.show_labels, #show class lables
+                            save_txt=IC.save_txt, #save results to *.txt file
+                            save_dir=IC.save_dir, #save to a specific directory
+                            cache=IC.cache #prevents .npy files from being stored in directory as temporary storage, instead using ram
+                            )
 
 
-    #           #put the result (frame + detections) into the output queue
-    #           if not self.results_queue.full():
-    #               try:
-    #                   self.results_queue.put_nowait((frame, results))
-    #                   print(f"Python: Results generated. Queueing...", flush=True)
-    #               except:
-    #                   pass
-              
-    #           self.frame_queue.task_done()
+                        #results methods
+                        #results.show() # display the results to the screen
+                        #results_at_time_t = results.new() #makes a copy of the contents of results when this method is called
+                        #results_file = results.save() #saves results to a file, stored in the results_file object
+                        #results.to_json() #converts the results file to a JSON file. Useful to be read by C++ or Rust code.
 
-    #         except Exception as e:
-    #           print(e)
+                        results = list(results_generator) #convert the generator object to a list
+
+                        #access each frame of the video (each frame is an entry in the results list)
+                        for i, frame in enumerate(results):
+                            #display annotated image in Comet
+                            annotated_frame = frame.plot()
+                            # experiment.log_image(annotated_frame, name="annotated_camera_frame")
+
+                            detections = []
+                            for box in frame.boxes:
+                                x1, y1, x2, y2 = box.xyxy[0].tolist()
+                                conf = float(box.conf[0])
+                                cls = int(box.cls[0])
+                                
+                                # Store only what Rust needs to make decisions
+                                detections.append({
+                                    "coords": [x1, y1, x2, y2],    #bb area
+                                    "conf": conf,                  #conf
+                                    "class": cls,                  #class ID 
+                                    "center_x": (x1 + x2) / 2      #x coords center
+                                })
+
+                            data_to_send = json.dumps(detections)
+
+                            if not self.results_queue.full():
+                                try:
+                                    self.results_queue.put_nowait(data_to_send) # Send the JSON string
+                                except:
+                                    pass
+                                                    
+                            self.frame_queue.task_done()
+
+                    except Exception as e:
+                        print(e)
 
 
-    #     if experiment:
-    #       #log Pytorch model in Comet with graphs
-    #       experiment.set_model_graph(str(self.model), overwrite=True) #Display a graph in Comet
+                if experiment:
+                    #log Pytorch model in Comet with graphs
+                    experiment.set_model_graph(str(self.model), overwrite=True) #Display a graph in Comet
 
-    #       print(f"Here is the link to your experiment data: {experiment.url}")
+                    print(f"Here is the link to your experiment data: {experiment.url}")
 
-    #   except Exception as e:
-    #     print(f"CRITICAL ERROR in ModelManager: {e}", flush=True)
-    #     import traceback
-    #     traceback.print_exc()
+        except Exception as e:
+            print(f"CRITICAL ERROR in ModelManager: {e}", flush=True)
+            import traceback
+            traceback.print_exc()
 
 
-  def stop(self):
-      self.running = False
+    def stop(self):
+        self.running = False

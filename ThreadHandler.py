@@ -10,16 +10,19 @@ from LVMConfigs import CameraConfigs as CC
 from LVMConfigs import PathConfigs as PC
 
 class ThreadHandler:
-    def __init__(self, model_path, settings):  #TODO: add settings
+    def __init__(self):  #TODO: add settings
         print("Python: ThreadHandler __init__ started", flush=True)
         self.settings_reader = SettingsReader()
         self.json_settings = self.settings_reader.load_settings("lvm_settings.json")
+
+        # self.labeler = ImageLabeler(self.json_settings)
+        # self.labeler.label()
 
         self.frame_queue = Queue(maxsize=1)
         self.results_queue = Queue(maxsize=1)
         
         self.camera_thread = CameraReader(CC.id, self.frame_queue)
-        self.prediction_thread = ModelManager(model_path, self.frame_queue, self.results_queue, settings)
+        self.prediction_thread = ModelManager(PC.custom_model_path, self.frame_queue, self.results_queue, self.json_settings)
         print("Python: ThreadHandler __init__ complete", flush=True)
 
     def run_internal_threads(self):
@@ -35,8 +38,10 @@ class ThreadHandler:
 
     def get_latest_results(self):
         if not self.results_queue.empty():
-            try: return self.results_queue.get_nowait()
-            except: return None
+            try: 
+                return self.results_queue.get_nowait()
+            except: 
+                return None
         return None
 
     def stop(self):
@@ -47,10 +52,10 @@ class ThreadHandler:
         self.prediction_thread.join(timeout=1.0)
 
 def access_python():
-    model_path = "yolov8n.pt" 
-    settings = {"inference": True}
+    # model_path = "yolov8n.pt" 
+    # settings = {"inference": True}
     try:
-        handler = ThreadHandler(model_path, settings)
+        handler = ThreadHandler()
         handler.run_internal_threads()
         return handler
     except Exception as e:
