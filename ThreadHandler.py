@@ -44,6 +44,18 @@ class ThreadHandler:
                 return None
         return None
 
+    def get_latest_frame(self):
+        """Returns (bytes, width, height) of the current frame for Rust AprilTag."""
+        if not self.frame_queue.empty():
+            # Use get_nowait to avoid blocking the robot's main loop
+            frame = self.frame_queue.queue[0] # Peek at the latest frame without removing it
+            
+            # AprilTag needs grayscale
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            height, width = gray.shape
+            return (gray.tobytes(), width, height)
+        return None
+
     def stop(self):
         self.camera_thread.stop()
         self.prediction_thread.stop()

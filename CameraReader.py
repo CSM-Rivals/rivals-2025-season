@@ -47,6 +47,9 @@ class CameraReader(Thread):
 
             success, frame = cap.read()
             if success:
+                cv2.imshow("Camera Debug (q to quit)", frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
                 if not self.frame_queue.full():
                     try: self.frame_queue.put_nowait(frame)
                     except: pass

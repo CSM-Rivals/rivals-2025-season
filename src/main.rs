@@ -1,3 +1,6 @@
+#[link(name = "winmm")]
+extern "C" {}
+
 use pyo3::prelude::*;
 use pyo3::types::PyModule;
 use serde::{Deserialize, Serialize};
@@ -10,8 +13,8 @@ use std::thread;
 use std::fs;
 use::std::ffi::CStr;
 use std::ffi::CString;
-use device_query::{DeviceQuery, DeviceState, Keycode};
-use crossterm::event::{self, Event, KeyCode, KeyEvent};
+use crossterm::event::{self, Event, KeyCode};
+use apriltag::Detector;
 #[cfg(target_os = "linux")]
 use rppal::gpio::Gpio;
 
@@ -52,6 +55,11 @@ fn main() -> PyResult<()> {
 
     let mut input = Input::new();
 
+    let mut atag_detector = Detector::builder()
+    .add_family_bits(apriltag::Family::tag_36h11(), 1)
+    .build()
+    .expect("Failed to create detector");
+
     // let device_state = DeviceState::new();
 
     println!("Done initializing, waiting for ESC startup...");
@@ -63,6 +71,8 @@ fn main() -> PyResult<()> {
 
     //thread safe channel for Python -> Rust communication
     let (tx, rx) = mpsc::channel::<String>();
+    //channel for Raw Frames (Buffer, Width, Height)
+    let (frame_tx, frame_rx) = mpsc::channel::<(Vec<u8>, i32, i32)>();
 
     // 1. Create a "Python Ready" flag
     let running = Arc::new(AtomicBool::new(true));
@@ -114,10 +124,16 @@ fn main() -> PyResult<()> {
             // --- POLLING LOOP ---
             while thread_running.load(Ordering::SeqCst) {
                 let result_bound = handler_instance.call_method0("get_latest_results")?;
-                
                 if !result_bound.is_none() {
                     if let Ok(data) = result_bound.extract::<String>() {
                         let _ = tx.send(data);
+                    }
+                }
+
+                let frame_result = handler_instance.call_method0("get_latest_frame")?;
+                if !frame_result.is_none() {
+                    if let Ok(frame_data) = frame_result.extract::<(Vec<u8>, i32, i32)>() {
+                        let _ = frame_tx.send(frame_data);
                     }
                 }
 
@@ -189,6 +205,36 @@ fn main() -> PyResult<()> {
             }
         }
 
+        // 2. Access the same Python handler instance to get the raw frame
+        while let Ok((buffer, width, height)) = frame_rx.try_recv() {
+            let w = width as usize;
+            let h = height as usize;
+
+            // 1. Create the Image
+            let mut im = unsafe { apriltag::Image::new_uinit(w, h).expect("Failed to allocate image") };
+
+            // 2. Fill the image using slice copying
+            // Since Image implements Deref<Target = ImageView>, 
+            // we can usually access its slice via .as_mut_slice() or by indexing.
+            // If the crate is being stubborn, we use this direct approach:
+            let stride = im.stride();
+            let pixels = im.as_mut(); // This gets the underlying pixel slice
+
+            for y in 0..h {
+                let src_start = y * w;
+                let dest_start = y * stride;
+                // We ensure we only copy the width, skipping the stride padding
+                pixels[dest_start..dest_start + w].copy_from_slice(&buffer[src_start..src_start + w]);
+            }
+
+            // 3. Run detection
+            let tags = atag_detector.detect(&im);
+            
+            for tag in tags {
+                println!("AprilTag ID {} found at center: {:?}", tag.id(), tag.center());
+            }
+        }
+
         // println!("asdf");
         // println!("x: {}", input.state.x);
         drivetrain::apply_inputs(&mut drivetrain_motors, input.state.left_stick_x * -1.0, input.state.left_stick_y, input.state.right_stick_x * -0.5);
@@ -197,11 +243,6 @@ fn main() -> PyResult<()> {
         shooter.update(input.state.y);
         intake.update(input.state.x);
 
-        // let keys: Vec<Keycode> = device_state.get_keys();
-        // if keys.contains(&Keycode::E) {
-        //     running.store(false, Ordering::SeqCst); // Tell thread to die
-        //     break;
-        // }
         if poll_for_exit_key() {
             running.store(false, Ordering::SeqCst);
             break;

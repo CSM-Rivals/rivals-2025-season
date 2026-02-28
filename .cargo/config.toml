@@ -9,3 +9,9 @@
 
 # [env]
 # PYO3_PYTHON = "venv/Scripts/python.exe"
+
+#find dummy pthread.h to avoid unset environment var error
+APRILTAG_SYS_WINDOWS_PTHREAD_INCLUDE_DIR = { value = "c_include", relative = true }
+
+#don't use thread-specific code since pthread.h dummy is empty
+CFLAGS = "-DAPRILTAG_NO_PTHREAD"
