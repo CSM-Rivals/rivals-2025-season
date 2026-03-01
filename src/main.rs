@@ -1,6 +1,3 @@
-#[link(name = "winmm")]
-extern "C" {}
-
 use pyo3::prelude::*;
 use pyo3::types::PyModule;
 use serde::{Deserialize, Serialize};

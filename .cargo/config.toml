@@ -7,11 +7,14 @@
 # [net]
 # offline = true
 
-# [env]
+[env]
 # PYO3_PYTHON = "venv/Scripts/python.exe"
 
-#find dummy pthread.h to avoid unset environment var error
+# This tells the apriltag-sys crate where to find our shim headers
+# 'relative = true' ensures it works regardless of where the user 
+# clones the repo on their hard drive.
 APRILTAG_SYS_WINDOWS_PTHREAD_INCLUDE_DIR = { value = "c_include", relative = true }
 
-#don't use thread-specific code since pthread.h dummy is empty
-CFLAGS = "-DAPRILTAG_NO_PTHREAD"
+# This ensures the C compiler (cl.exe) actually uses that directory 
+# and ignores the missing pthreads.
+CFLAGS = { value = "/I c_include -DAPRILTAG_NO_PTHREADS", relative = true }
