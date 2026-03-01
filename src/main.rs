@@ -57,14 +57,7 @@ fn main() -> PyResult<()> {
     .build()
     .expect("Failed to create detector");
 
-    // let device_state = DeviceState::new();
-
-    println!("Done initializing, waiting for ESC startup...");
-    // drivetrain_motors.startup();
-    println!("ESC startup finished");
-    // drivetrain::apply_inputs(&mut drivetrain_motors, 0.0, 0.25);
-    // shooter.update(true);
-    println!("asdf");
+    println!("Done initializing, ESC startup finished.");
 
     //thread safe channel for Python -> Rust communication
     let (tx, rx) = mpsc::channel::<String>();
@@ -163,10 +156,7 @@ fn main() -> PyResult<()> {
     println!("entering Loop");
     
     //break out of main control loop with 'E' key
-    let mut i: u32 = 0;
     loop {
-        i += 1;
-        // println!("i: {}", i);
         println!("Looping...");
         input.update();
 
@@ -229,11 +219,10 @@ fn main() -> PyResult<()> {
             
             for tag in tags {
                 println!("AprilTag ID {} found at center: {:?}", tag.id(), tag.center());
+                //do something with tag logic using ID and center
             }
         }
 
-        // println!("asdf");
-        // println!("x: {}", input.state.x);
         drivetrain::apply_inputs(&mut drivetrain_motors, input.state.left_stick_x * -1.0, input.state.left_stick_y, input.state.right_stick_x * -0.5);
 
         // shooter.update(true);
